@@ -4,14 +4,16 @@ import { io } from 'socket.io-client';
 const socket = io('http://localhost:5000');
 
 function App() {
-  const [prices, setPrices] = useState({});
+  const [prices, setPrices] = useState<Record<string, string>>({});
 
   useEffect(() => {
     socket.on('priceUpdate', (data) => {
-      setPrices((prev) => ({ ...prev, [data.pair]: data.price }));
+      setPrices((prev) => ({ ...prev, [data.pair]: String(data.price) }));
     });
 
-    return () => socket.off('priceUpdate');
+    return () => {
+      socket.off('priceUpdate');
+    };
   }, []);
 
   return (

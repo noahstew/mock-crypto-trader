@@ -1,11 +1,18 @@
 import express from 'express';
+import type { Request, Response } from 'express';
+import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
 import WebSocket from 'ws';
-import cors from 'cors';
+import type { RawData } from 'ws';
 
 const app = express();
 app.use(cors());
+app.use(express.json());
+
+app.get('/', (req: Request, res: Response) => {
+  res.send('Hello from TypeScript Express!');
+});
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -25,8 +32,22 @@ coinbase.on('open', () => {
   coinbase.send(JSON.stringify(msg));
 });
 
-coinbase.on('message', (msg) => {
-  const data = JSON.parse(msg);
+coinbase.on('message', (msg: RawData) => {
+  // Convert RawData to a string safely before parsing
+  let text: string;
+  if (typeof msg === 'string') {
+    text = msg;
+  } else if (Array.isArray(msg)) {
+    // msg can be Buffer[] — concatenate then convert
+    text = Buffer.concat(msg).toString();
+  } else if (msg instanceof ArrayBuffer) {
+    text = Buffer.from(msg).toString();
+  } else {
+    // Buffer or other objects
+    text = msg.toString();
+  }
+
+  const data = JSON.parse(text);
   if (data.type === 'ticker') {
     // Broadcast live prices to all connected clients
     io.emit('priceUpdate', {
