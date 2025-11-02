@@ -5,12 +5,20 @@ import {
   type QueryArrayResult,
   type QueryResultRow,
 } from 'pg';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 declare global {
   // allow reusing the pool across HMR / tsx watch in dev
   // eslint-disable-next-line no-var
   var __pgPool: Pool | undefined;
 }
+
+// Load .env from project root (one level up)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({ path: join(__dirname, '..', '.env') });
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
