@@ -1,0 +1,57 @@
+.env
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build / output
+dist/
+build/
+out/
+coverage/
+.cache/
+.parcel-cache/
+*.tsbuildinfo
+
+# Framework caches
+.next/
+.nuxt/
+.expo/
+.expo-shared/
+
+# Logs and temp files
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+*.tmp
+tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Environment files
+.env.local
+.env.*.local
+
+# Packages / archives
+bower_components/
+*.tgz
+*.zip
+
+#
