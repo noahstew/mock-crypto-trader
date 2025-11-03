@@ -1,16 +1,17 @@
 import { Link, Outlet } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 export default function App() {
   return (
     <div>
-      <nav style={{ display: 'flex', gap: '1rem' }}>
-        <Link to="/">Home</Link>
-        <Link to="/about">About</Link>
-      </nav>
+      <Navbar />
 
       <main>
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   );
 }
