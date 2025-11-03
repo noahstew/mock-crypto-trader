@@ -23,7 +23,22 @@ export default function createCoinbaseClient(io: IOServer) {
       ws!.send(
         JSON.stringify({
           type: 'subscribe',
-          product_ids: ['BTC-USD', 'ETH-USD'],
+          // subscribe to a wider set of product ids matching frontend grid
+          product_ids: [
+            'BTC-USD',
+            'ETH-USD',
+            'SOL-USD',
+            'ADA-USD',
+            'XRP-USD',
+            'LTC-USD',
+            'BCH-USD',
+            'DOT-USD',
+            'DOGE-USD',
+            'MATIC-USD',
+            'BNB-USD',
+            'AVAX-USD',
+            'LINK-USD',
+          ],
           channels: ['ticker'],
         })
       );

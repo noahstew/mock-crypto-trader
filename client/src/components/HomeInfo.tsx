@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import CryptoGrid from './CryptoGrid';
 
 export default function HomeInfo() {
