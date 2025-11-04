@@ -63,8 +63,11 @@ export default function Auth() {
           localStorage.setItem('username', data.username);
         }
 
-        // navigate to home
-        navigate('/');
+        // Trigger custom event to update Navbar
+        window.dispatchEvent(new Event('authChange'));
+
+        // navigate to dashboard
+        navigate('/dashboard');
       } else {
         // register
         const res = await fetch(`${API_BASE}/auth/register`, {
