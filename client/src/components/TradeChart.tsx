@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { getSocket } from '../lib/socket';
+import { apiCache } from '../lib/cache';
 import PeriodSelector from './trading/PeriodSelector';
 import PeriodStats from './trading/PeriodStats';
 import TradePanel from './trading/TradePanel';
@@ -45,7 +46,6 @@ export default function TradeChart({
 
     function fetchHistoricalData() {
       if (!coinId) return;
-      setLoading(true);
 
       const daysMap: Record<TimePeriod, number> = {
         '1H': 0.042, // ~1 hour in days
@@ -55,10 +55,28 @@ export default function TradeChart({
       };
 
       const days = daysMap[timePeriod];
+
+      // Check cache first (cache TTL varies by period)
+      const cacheKey = `chart_${coinId}_${timePeriod}`;
+      const cached = apiCache.get<ChartDataPoint[]>(cacheKey);
+
+      if (cached) {
+        setChartData(cached);
+        if (cached.length > 0) {
+          setCurrentPrice(cached[cached.length - 1].price);
+        }
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
       const url = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`;
 
       fetch(url)
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
         .then((data) => {
           if (data?.prices) {
             const formatted = data.prices.map(
@@ -72,6 +90,15 @@ export default function TradeChart({
             if (formatted.length > 0) {
               setCurrentPrice(formatted[formatted.length - 1].price);
             }
+
+            // Cache with TTL based on period
+            const cacheTTLMap: Record<TimePeriod, number> = {
+              '1H': 30 * 1000, // 30 seconds for 1H
+              '1D': 2 * 60 * 1000, // 2 minutes for 1D
+              '1W': 5 * 60 * 1000, // 5 minutes for 1W
+              '1Y': 15 * 60 * 1000, // 15 minutes for 1Y
+            };
+            apiCache.set(cacheKey, formatted, cacheTTLMap[timePeriod]);
           }
         })
         .catch((err) => console.warn('Chart data fetch failed:', err))
@@ -228,7 +255,7 @@ export default function TradeChart({
             {currentPrice !== null
               ? `$${currentPrice.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
+                  maximumFractionDigits: 5,
                 })}`
               : '—'}
           </div>

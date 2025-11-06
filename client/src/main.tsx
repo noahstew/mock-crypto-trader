@@ -5,6 +5,7 @@ import App from './App';
 import Auth from './pages/Auth';
 import HomeInfo from './components/HomeInfo';
 import Dashboard from './pages/Dashboard';
+import Trade from './pages/Trade';
 import './index.css';
 
 const container = document.getElementById('root');
@@ -18,6 +19,7 @@ ReactDOM.createRoot(container).render(
           <Route index element={<HomeInfo />} />
           <Route path="auth" element={<Auth />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="trade" element={<Trade />} />
         </Route>
       </Routes>
     </BrowserRouter>

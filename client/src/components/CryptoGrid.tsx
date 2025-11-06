@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getSocket } from '../lib/socket';
+import { apiCache } from '../lib/cache';
 
 // Single source of truth for markets: symbol -> CoinGecko id
 const MARKETS: { symbol: string; id: string }[] = [
@@ -59,13 +60,74 @@ export default function CryptoGrid() {
     if (!ids.length) return;
 
     const uniqueIds = Array.from(new Set(ids)).join(',');
+    const cacheKey = `markets_${uniqueIds}`;
+
+    // Check cache first (5 minute TTL)
+    const cached = apiCache.get<any[]>(cacheKey);
+
+    if (cached) {
+      // Process cached data
+      const iconsMap: Record<string, string> = {};
+      const baselineMap: Record<string, number> = {};
+      const initialPriceMap: Record<string, number> = {};
+
+      cached.forEach((item) => {
+        const market = MARKETS.find((m) => m.id === item.id);
+        if (!market) return;
+
+        // icon
+        if (item.image) iconsMap[market.symbol] = item.image;
+
+        // compute baseline (24h open)
+        if (typeof item.current_price === 'number') {
+          initialPriceMap[market.symbol] = item.current_price;
+
+          if (typeof item.price_change_24h === 'number') {
+            baselineMap[market.symbol] =
+              item.current_price - item.price_change_24h;
+          } else if (typeof item.price_change_percentage_24h === 'number') {
+            const pct = item.price_change_percentage_24h;
+            baselineMap[market.symbol] =
+              pct === -100 ? 0 : item.current_price / (1 + pct / 100);
+          }
+        }
+      });
+
+      setIcons(iconsMap);
+
+      // set initial prices and baseline24h into state
+      setPrices((prev) => {
+        const next = { ...prev };
+        MARKETS.forEach(({ symbol }) => {
+          const existing = prev[symbol];
+          const initial = initialPriceMap[symbol];
+          const baseline = baselineMap[symbol];
+
+          next[symbol] = {
+            price: existing?.price ?? initial ?? 0,
+            prev: existing?.prev,
+            baseline24h: baseline ?? existing?.baseline24h,
+          };
+        });
+        return next;
+      });
+      return;
+    }
+
+    // Fetch from API if not cached
     const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${encodeURIComponent(
       uniqueIds
     )}&per_page=250`;
 
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data: any[]) => {
+        // Cache the response for 5 minutes
+        apiCache.set(cacheKey, data, 5 * 60 * 1000);
+
         const iconsMap: Record<string, string> = {};
         const baselineMap: Record<string, number> = {};
         const initialPriceMap: Record<string, number> = {};
