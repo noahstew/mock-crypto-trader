@@ -2,11 +2,12 @@ import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
 export function getSocket(): Socket {
   if (!socket) {
-    // Explicitly connect to the server running on port 5000.
-    // If your server runs elsewhere, change this URL or use an env var.
-    socket = io('http://localhost:5000');
+    // Connect to the server using the configured API base URL
+    socket = io(API_BASE);
 
     socket.on('connect', () => {
       console.log('⚡ Socket connected (client):', socket?.id);

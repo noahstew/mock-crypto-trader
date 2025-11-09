@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import PortfolioSummary from '../components/PortfolioSummary';
 import { apiCache } from '../lib/cache';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
 // Mapping of symbols to CoinGecko IDs
 const COIN_IDS: Record<string, string> = {
   BTC: 'bitcoin',
@@ -49,7 +51,7 @@ export default function Dashboard() {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/portfolio', {
+      const response = await fetch(`${API_BASE}/api/portfolio`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -164,19 +166,16 @@ export default function Dashboard() {
         return;
       }
 
-      const response = await fetch(
-        'http://localhost:5000/api/portfolio/create',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            startingBalance: parseFloat(setupAmount),
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE}/api/portfolio/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          startingBalance: parseFloat(setupAmount),
+        }),
+      });
 
       const data = await response.json();
 
@@ -214,19 +213,16 @@ export default function Dashboard() {
         return;
       }
 
-      const response = await fetch(
-        'http://localhost:5000/api/portfolio/reset',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            startingBalance: parseFloat(resetAmount),
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE}/api/portfolio/reset`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          startingBalance: parseFloat(resetAmount),
+        }),
+      });
 
       const data = await response.json();
 

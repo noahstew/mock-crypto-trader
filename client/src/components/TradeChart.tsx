@@ -15,6 +15,8 @@ import PeriodStats from './trading/PeriodStats';
 import TradePanel from './trading/TradePanel';
 import HoldingsPanel from './trading/HoldingsPanel';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
 type TimePeriod = '1H' | '1D' | '1W' | '1Y';
 type ChartDataPoint = { timestamp: number; price: number; time: string };
 
@@ -51,7 +53,7 @@ export default function TradeChart({
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/portfolio', {
+      const response = await fetch(`${API_BASE}/api/portfolio`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
