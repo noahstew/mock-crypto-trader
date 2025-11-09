@@ -1,6 +1,35 @@
 import { useState, useEffect } from 'react';
 import { getSocket } from '../../lib/socket';
 
+// Format price with dynamic decimal places (2-5 based on value)
+function formatPrice(price: number): string {
+  if (price >= 1000) {
+    // Large prices: $1,234.12
+    return price.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  } else if (price >= 1) {
+    // Medium prices: $12.345
+    return price.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 3,
+    });
+  } else if (price >= 0.01) {
+    // Small prices: $0.12345
+    return price.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 5,
+    });
+  } else {
+    // Very small prices: $0.00123
+    return price.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 5,
+    });
+  }
+}
+
 export interface Holding {
   symbol: string;
   amount: number;
@@ -269,23 +298,15 @@ export default function HoldingsTable({
                   </td>
                   <td className="px-6 py-4 text-right text-sm text-slate-300">
                     {holding.amount.toLocaleString(undefined, {
-                      minimumFractionDigits: 4,
+                      minimumFractionDigits: 2,
                       maximumFractionDigits: 8,
                     })}
                   </td>
                   <td className="px-6 py-4 text-right text-sm text-slate-300">
-                    $
-                    {holding.avgPurchasePrice.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    ${formatPrice(holding.avgPurchasePrice)}
                   </td>
                   <td className="px-6 py-4 text-right text-sm text-white font-medium">
-                    $
-                    {holding.currentPrice.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    ${formatPrice(holding.currentPrice)}
                   </td>
                   <td className="px-6 py-4 text-right text-sm text-white font-semibold">
                     $

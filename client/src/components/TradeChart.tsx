@@ -34,11 +34,66 @@ export default function TradeChart({
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Mock holdings data - will be replaced with real data from backend
-  const [holdings] = useState({
-    amount: 0.5, // amount of coins owned
-    purchasePrice: 65000, // average purchase price
+  // Real holdings and balance data from backend
+  const [holdings, setHoldings] = useState({
+    amount: 0,
+    purchasePrice: 0,
   });
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+
+  // Fetch portfolio data from backend
+  const fetchPortfolioData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setPortfolioLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/portfolio', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        setPortfolioLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      // Set available balance
+      setAvailableBalance(data.portfolio.availableBalance);
+
+      // Find holdings for the selected coin
+      const coinHolding = data.holdings.find(
+        (h: any) => h.symbol === selectedCoin
+      );
+
+      if (coinHolding) {
+        setHoldings({
+          amount: coinHolding.amount,
+          purchasePrice: coinHolding.avgPurchasePrice,
+        });
+      } else {
+        setHoldings({
+          amount: 0,
+          purchasePrice: 0,
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching portfolio data:', err);
+    } finally {
+      setPortfolioLoading(false);
+    }
+  };
+
+  // Fetch portfolio data on mount and when coin changes
+  useEffect(() => {
+    fetchPortfolioData();
+  }, [selectedCoin]);
 
   // Fetch historical data from CoinGecko
   useEffect(() => {
@@ -241,10 +296,17 @@ export default function TradeChart({
           <div>
             <div className="text-2xl font-bold text-white">{selectedCoin}</div>
             <div className="text-sm text-slate-400">
-              {coinId
-                .split('-')
-                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                .join(' ')}
+              {portfolioLoading ? (
+                'Loading balance...'
+              ) : (
+                <>
+                  Available: $
+                  {availableBalance.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -344,13 +406,18 @@ export default function TradeChart({
       </div>
 
       {/* Trading Panel */}
-      {chartData.length > 0 && (
+      {chartData.length > 0 && currentPrice !== null && (
         <div className="grid grid-cols-10 gap-4 pt-4 border-t border-slate-700">
           <TradePanel
             selectedCoin={selectedCoin}
+            currentPrice={currentPrice}
             type="buy"
             buttonColor="bg-emerald-600"
             buttonHoverColor="hover:bg-emerald-700"
+            onTradeComplete={() => {
+              // Refresh holdings and balance data after trade
+              fetchPortfolioData();
+            }}
           />
           <HoldingsPanel
             selectedCoin={selectedCoin}
@@ -359,9 +426,14 @@ export default function TradeChart({
           />
           <TradePanel
             selectedCoin={selectedCoin}
+            currentPrice={currentPrice}
             type="sell"
             buttonColor="bg-rose-600"
             buttonHoverColor="hover:bg-rose-700"
+            onTradeComplete={() => {
+              // Refresh holdings and balance data after trade
+              fetchPortfolioData();
+            }}
           />
         </div>
       )}

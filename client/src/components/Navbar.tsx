@@ -58,7 +58,7 @@ function Navbar() {
               to="/dashboard"
               className="text-white hover:underline hover:text-yellow-500 transition-colors cursor-pointer underline-offset-4"
             >
-              Dashboard
+              Portfolio
             </Link>
             <Link
               to="/trade"
