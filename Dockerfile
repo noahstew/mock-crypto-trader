@@ -16,6 +16,9 @@ COPY server/ ./
 # Build TypeScript
 RUN npm run build
 
+# Verify the build output
+RUN ls -la dist/ && echo "Build contents:" && ls dist/
+
 # Remove devDependencies to reduce image size
 RUN npm prune --production
 
