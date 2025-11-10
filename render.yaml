@@ -1,14 +1,13 @@
 services:
   - type: web
     name: mock-crypto-trader-backend
-    runtime: node
-    buildCommand: cd server && npm install && npm run build
-    startCommand: cd server && npm start
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
       - key: DATABASE_URL
         sync: false # You'll set this in Render dashboard
       - key: JWT_SECRET

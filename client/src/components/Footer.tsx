@@ -1,5 +1,3 @@
-import React from 'react';
-
 function Footer() {
   return (
     <div className="border-neutral-300 border-t-2 text-center text-2xl py-16">
