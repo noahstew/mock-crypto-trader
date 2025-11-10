@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: mock-crypto-trader-backend
+    runtime: node
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false # You'll set this in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true # Render will auto-generate this
+      - key: FRONTEND_URL
+        sync: false # Set this to your Vercel URL (e.g., https://your-app.vercel.app)
+    healthCheckPath: /health

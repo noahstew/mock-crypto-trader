@@ -6,7 +6,36 @@ import portfolioRouter from './routes/holdings.js';
 
 const app = express();
 
-app.use(cors());
+// CORS configuration - allow requests from frontend (local and production)
+const allowedOrigins = [
+  'http://localhost:5173', // Vite dev server
+  'http://localhost:5174', // Alternate Vite port
+  'http://localhost:3000', // Alternative local dev
+  process.env.FRONTEND_URL, // Production frontend URL (set in Render)
+].filter(Boolean); // Remove undefined values
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      // Allow Vercel preview/production deployments
+      if (origin.includes('vercel.app')) {
+        return callback(null, true);
+      }
+
+      // Allow configured origins
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
