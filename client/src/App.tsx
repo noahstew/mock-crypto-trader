@@ -1,8 +1,12 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import { LoadingToast } from './components/Toast';
+import { useServerStatus } from './hooks/useServerStatus';
 
 export default function App() {
+  const { isWakingUp } = useServerStatus();
+
   return (
     <div>
       <Navbar />
@@ -12,6 +16,10 @@ export default function App() {
       </main>
 
       <Footer />
+
+      {isWakingUp && (
+        <LoadingToast message="🚀 Server is waking up from sleep (free tier). This may take 30-60 seconds. Thanks for your patience!" />
+      )}
     </div>
   );
 }
