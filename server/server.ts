@@ -6,10 +6,14 @@ import { Server as IOServer } from 'socket.io';
 import app from './app.js';
 import registerSockets from './sockets/index.js';
 
-// Load .env from project root (one level up)
+// Load .env from project root (one level up) - only in development
+// In production (Docker), environment variables are provided by the platform
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-config({ path: join(__dirname, '..', '.env') });
+
+if (process.env.NODE_ENV !== 'production') {
+  config({ path: join(__dirname, '..', '.env') });
+}
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 

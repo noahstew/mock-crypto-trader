@@ -1,5 +1,8 @@
 .env
 
+# Docker
+.env.docker
+
 # Vercel
 .vercel
 
