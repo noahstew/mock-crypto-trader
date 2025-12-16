@@ -17,6 +17,16 @@ export async function apiRequest(
   // First attempt
   try {
     const response = await fetch(url, fetchOptions);
+
+    // Auto-logout on authentication failures (401, 403)
+    if (response.status === 401 || response.status === 403) {
+      console.warn('Authentication failed. Logging out...');
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      window.dispatchEvent(new Event('authChange'));
+      window.location.href = '/auth';
+    }
+
     return response;
   } catch (error) {
     // If skipRetry or not a network error, throw immediately
@@ -34,6 +44,16 @@ export async function apiRequest(
       try {
         const response = await fetch(url, fetchOptions);
         console.log('Server is awake!');
+
+        // Auto-logout on authentication failures (401, 403)
+        if (response.status === 401 || response.status === 403) {
+          console.warn('Authentication failed. Logging out...');
+          localStorage.removeItem('token');
+          localStorage.removeItem('username');
+          window.dispatchEvent(new Event('authChange'));
+          window.location.href = '/auth';
+        }
+
         return response;
       } catch (retryError) {
         if (i === MAX_RETRIES - 1) {

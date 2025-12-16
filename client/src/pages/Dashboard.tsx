@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import PortfolioSummary from '../components/PortfolioSummary';
 import { apiCache } from '../lib/cache';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { apiRequest } from '../lib/api';
 
 // Mapping of symbols to CoinGecko IDs
 const COIN_IDS: Record<string, string> = {
@@ -51,7 +50,7 @@ export default function Dashboard() {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/api/portfolio`, {
+      const response = await apiRequest('/api/portfolio', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -166,7 +165,7 @@ export default function Dashboard() {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/api/portfolio/create`, {
+      const response = await apiRequest('/api/portfolio/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,7 +212,7 @@ export default function Dashboard() {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/api/portfolio/reset`, {
+      const response = await apiRequest('/api/portfolio/reset', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

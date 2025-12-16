@@ -1,6 +1,5 @@
 import { useState } from 'react';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+import { apiRequest } from '../../lib/api';
 
 interface TradePanelProps {
   selectedCoin: string;
@@ -59,7 +58,7 @@ export default function TradePanel({
       const endpoint =
         type === 'buy' ? '/api/portfolio/buy' : '/api/portfolio/sell';
 
-      const response = await fetch(`${API_BASE}${endpoint}`, {
+      const response = await apiRequest(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

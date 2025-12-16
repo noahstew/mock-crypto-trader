@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { getSocket } from '../lib/socket';
 import { apiCache } from '../lib/cache';
+import { apiRequest } from '../lib/api';
 import PeriodSelector from './trading/PeriodSelector';
 import PeriodStats from './trading/PeriodStats';
 import TradePanel from './trading/TradePanel';
@@ -35,6 +36,7 @@ export default function TradeChart({
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Real holdings and balance data from backend
   const [holdings, setHoldings] = useState({
@@ -53,7 +55,7 @@ export default function TradeChart({
         return;
       }
 
-      const response = await fetch(`${API_BASE}/api/portfolio`, {
+      const response = await apiRequest('/api/portfolio', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -101,29 +103,33 @@ export default function TradeChart({
   useEffect(() => {
     if (!coinId) return;
 
-    function fetchHistoricalData() {
+    // Clear existing data immediately when coin or period changes
+    setChartData([]);
+    setLoading(true);
+    setFetchError(null);
+
+    const daysMap: Record<TimePeriod, number> = {
+      '1H': 0.042, // ~1 hour in days
+      '1D': 1,
+      '1W': 7,
+      '1Y': 365,
+    };
+
+    const days = daysMap[timePeriod];
+    const cacheKey = `chart_${coinId}_${timePeriod}`;
+
+    function fetchHistoricalData(skipCache = false) {
       if (!coinId) return;
 
-      const daysMap: Record<TimePeriod, number> = {
-        '1H': 0.042, // ~1 hour in days
-        '1D': 1,
-        '1W': 7,
-        '1Y': 365,
-      };
-
-      const days = daysMap[timePeriod];
-
       // Check cache first (cache TTL varies by period)
-      const cacheKey = `chart_${coinId}_${timePeriod}`;
-      const cached = apiCache.get<ChartDataPoint[]>(cacheKey);
-
-      if (cached) {
-        setChartData(cached);
-        if (cached.length > 0) {
+      if (!skipCache) {
+        const cached = apiCache.get<ChartDataPoint[]>(cacheKey);
+        if (cached && cached.length > 0) {
+          setChartData(cached);
           setCurrentPrice(cached[cached.length - 1].price);
+          setLoading(false);
+          return;
         }
-        setLoading(false);
-        return;
       }
 
       setLoading(true);
@@ -131,7 +137,12 @@ export default function TradeChart({
 
       fetch(url)
         .then((r) => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          if (!r.ok) {
+            if (r.status === 429) {
+              throw new Error('RATE_LIMIT');
+            }
+            throw new Error(`HTTP ${r.status}`);
+          }
           return r.json();
         })
         .then((data) => {
@@ -147,6 +158,7 @@ export default function TradeChart({
             if (formatted.length > 0) {
               setCurrentPrice(formatted[formatted.length - 1].price);
             }
+            setFetchError(null);
 
             // Cache with TTL based on period
             const cacheTTLMap: Record<TimePeriod, number> = {
@@ -158,14 +170,25 @@ export default function TradeChart({
             apiCache.set(cacheKey, formatted, cacheTTLMap[timePeriod]);
           }
         })
-        .catch((err) => console.warn('Chart data fetch failed:', err))
+        .catch((err) => {
+          console.warn('Chart data fetch failed:', err);
+          if (err.message === 'RATE_LIMIT') {
+            setFetchError(
+              'API rate limit reached. Please wait a moment before trying again.'
+            );
+          } else {
+            setFetchError(
+              'Unable to load chart data. This may be due to API limits. Please try again in a moment.'
+            );
+          }
+        })
         .finally(() => setLoading(false));
     }
 
-    // Initial fetch
-    fetchHistoricalData();
+    // Initial fetch - try cache first, then fetch if needed
+    fetchHistoricalData(false);
 
-    // Refresh intervals based on time period
+    // Refresh intervals based on time period - use cache on refresh
     const refreshIntervalMap: Record<TimePeriod, number> = {
       '1H': 30 * 1000, // Refresh every 30 seconds for 1H
       '1D': 2 * 60 * 1000, // Refresh every 2 minutes for 1D
@@ -173,9 +196,9 @@ export default function TradeChart({
       '1Y': 30 * 60 * 1000, // Refresh every 30 minutes for 1Y
     };
 
-    // Set up periodic refresh
+    // Set up periodic refresh - these will use cache if available
     const intervalId = setInterval(
-      fetchHistoricalData,
+      () => fetchHistoricalData(false),
       refreshIntervalMap[timePeriod]
     );
 
@@ -318,8 +341,9 @@ export default function TradeChart({
           <div className="text-3xl font-bold text-white">
             {currentPrice !== null
               ? `$${currentPrice.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 5,
+                  minimumFractionDigits: currentPrice < 1 ? 6 : 2,
+                  maximumFractionDigits:
+                    currentPrice < 1 ? 6 : currentPrice < 100 ? 4 : 2,
                 })}`
               : '—'}
           </div>
@@ -369,12 +393,18 @@ export default function TradeChart({
               <YAxis
                 stroke="#94a3b8"
                 tick={{ fill: '#94a3b8', fontSize: 12 }}
-                domain={['dataMin - 10', 'dataMax + 10']}
-                tickFormatter={(val: number) =>
-                  `$${Number(val).toLocaleString(undefined, {
-                    maximumFractionDigits: 0,
-                  })}`
-                }
+                domain={[
+                  (dataMin: number) => dataMin * 0.995,
+                  (dataMax: number) => dataMax * 1.005,
+                ]}
+                tickFormatter={(val: number) => {
+                  // For low-value coins like DOGE, show more decimal places
+                  const decimals = val < 1 ? 4 : val < 100 ? 2 : 0;
+                  return `$${Number(val).toLocaleString(undefined, {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals,
+                  })}`;
+                }}
               />
               <Tooltip
                 contentStyle={{
@@ -383,13 +413,17 @@ export default function TradeChart({
                   borderRadius: '0.5rem',
                   color: '#fff',
                 }}
-                formatter={(value: number) => [
-                  `$${value.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`,
-                  'Price',
-                ]}
+                formatter={(value: number) => {
+                  // For low-value coins like DOGE, show more decimal places
+                  const decimals = value < 1 ? 6 : value < 100 ? 4 : 2;
+                  return [
+                    `$${value.toLocaleString(undefined, {
+                      minimumFractionDigits: decimals,
+                      maximumFractionDigits: decimals,
+                    })}`,
+                    'Price',
+                  ];
+                }}
               />
               <Line
                 type="monotone"
@@ -401,8 +435,14 @@ export default function TradeChart({
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-full text-slate-400">
-            No data available
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+            <div>{fetchError || 'Unable to load chart data'}</div>
+            {fetchError && (
+              <div className="text-sm text-slate-500">
+                The API may be rate-limited. Please wait 30-60 seconds and try
+                switching time periods.
+              </div>
+            )}
           </div>
         )}
       </div>
