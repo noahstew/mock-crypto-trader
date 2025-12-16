@@ -16,8 +16,6 @@ import PeriodStats from './trading/PeriodStats';
 import TradePanel from './trading/TradePanel';
 import HoldingsPanel from './trading/HoldingsPanel';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-
 type TimePeriod = '1H' | '1D' | '1W' | '1Y';
 type ChartDataPoint = { timestamp: number; price: number; time: string };
 
